@@ -5,6 +5,7 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
+from django.core.cache import cache
 
 from core import models, serializers, utils
 
@@ -16,10 +17,15 @@ class CustomerAPIView(views.APIView):
     permission_classes = (AllowAny,)
 
     def get(self, request: Request) -> Response:
+        if data := cache.get('customer'):
+            return Response({'response': data})
+
         common_gems = utils.get_common_gems(queryset=self.queryset)
         data = self.serializer_class(
             self.queryset.all(), many=True, context={'common_gems': common_gems}
         ).data
+
+        cache.set('customer', data, None)
         return Response({'response': data})
 
 
